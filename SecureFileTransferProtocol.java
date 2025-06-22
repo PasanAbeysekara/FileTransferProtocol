@@ -21,8 +21,15 @@ public class SecureFileTransferProtocol {
         String nonce = "nonce123";
         byte[] signedNonce = signData(nonce.getBytes(StandardCharsets.UTF_8), aliceKeyPair.getPrivate());
 
+        // Encrypt the Nonce before sending
+        byte[] encryptedNonce = rsaEncrypt(nonce.getBytes(StandardCharsets.UTF_8), bobKeyPair.getPublic());
+
+        // <<<<<<<<<<<<<<<<<<<<<<<TRANSMIT>>>>>>>>>>>>>>>>>>>>>>>>>
+        // Bob decrypts the message
+        byte[] decryptedNonce = rsaDecrypt(encryptedNonce, bobKeyPair.getPrivate());
+
         // 3. Bob verifies Alice’s signature
-        boolean isAliceValid = verifySignature(nonce.getBytes(StandardCharsets.UTF_8), signedNonce, aliceKeyPair.getPublic());
+        boolean isAliceValid = verifySignature(decryptedNonce, signedNonce, aliceKeyPair.getPublic());
         System.out.println("Step 3 - Alice Signature Valid? " + isAliceValid);
 
         // 4. Bob generates AES session key and IV
@@ -37,9 +44,20 @@ public class SecureFileTransferProtocol {
         byte[] encryptedKey = rsaEncrypt(aesSessionKey.getEncoded(), aliceKeyPair.getPublic());
         byte[] encryptedIv = rsaEncrypt(iv, aliceKeyPair.getPublic());
 
+        // Bob signs
+        byte[] signedKey = signData(aesSessionKey.getEncoded(), bobKeyPair.getPrivate());
+        byte[] signedIv = signData(iv, bobKeyPair.getPrivate());
+
+        // AES session key + IV and their signatures will be sent via the medium
+        // <<<<<<<<<<<<<<<<<<<<<<<TRANSMIT>>>>>>>>>>>>>>>>>>>>>>>>>
         // 6. Alice decrypts AES key and IV
         byte[] decryptedKey = rsaDecrypt(encryptedKey, aliceKeyPair.getPrivate());
         byte[] decryptedIv = rsaDecrypt(encryptedIv, aliceKeyPair.getPrivate());
+
+        boolean isKeyValid = verifySignature(decryptedKey, signedKey, bobKeyPair.getPublic());
+        System.out.println("Is - Session Key Valid? " + isKeyValid);
+        boolean isIvValid = verifySignature(decryptedIv, signedIv, bobKeyPair.getPublic());
+        System.out.println("Is IV valid?: " + isIvValid);
 
         SecretKeySpec aesKeyFromAlice = new SecretKeySpec(decryptedKey, "AES");
         IvParameterSpec ivSpecFromAlice = new IvParameterSpec(decryptedIv);
