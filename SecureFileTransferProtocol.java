@@ -124,7 +124,7 @@ public class SecureFileTransferProtocol {
         System.out.println("Step 15 - Bob calculated file hash: " + bytesToHex(bobCalculatedHash));
 
         // 16. Bob compares the hashes
-        boolean hashesMatch = Arrays.equals(fileHash, bobCalculatedHash);
+        boolean hashesMatch = Arrays.equals(decryptedFileHashRSA, bobCalculatedHash);
         System.out.println("Step 16 - File integrity verified? " + hashesMatch);
 
         // Display the final decrypted content
