@@ -90,24 +90,33 @@ public class SecureFileTransferProtocol {
         byte[] timestampBytes = String.valueOf(timestamp).getBytes(StandardCharsets.UTF_8);
         byte[] signedTimestamp = signData(timestampBytes, aliceKeyPair.getPrivate());
 
+        byte[] encryptedFileRSA = rsaEncrypt(encryptedFile, bobKeyPair.getPublic());
+        byte[] encryptedFileHashRSA = rsaEncrypt(fileHash, bobKeyPair.getPublic());
+        byte[] encryptedTimeStampRSA = rsaEncrypt(timestampBytes, bobKeyPair.getPublic());
+
         System.out.println("========== TRANSMITTING FILE ==========");
         System.out.println("Sending: Encrypted file + File hash signature + Timestamp + Timestamp signature");
 
         // <<<<<<<<<<<<<<<<<<<<<<<TRANSMIT>>>>>>>>>>>>>>>>>>>>>>>>>
         // Encrypted file, signed hash, timestamp, and signed timestamp are transmitted
+        
+        // Decrypt all info transmitted using RSA with bob's private key
+        byte[] decryptedFileRSA = rsaDecrypt(encryptedFileRSA, bobKeyPair.getPrivate());
+        byte[] decryptedFileHashRSA = rsaDecrypt(encryptedFileHashRSA, bobKeyPair.getPrivate());
+        byte[] decryptedTimeStampRSA = rsaDecrypt(encryptedTimeStampRSA, bobKeyPair.getPrivate());
 
         // 12. Bob receives and verifies Alice's signature on the file hash
-        boolean isFileHashSignatureValid = verifySignature(fileHash, signedFileHash, aliceKeyPair.getPublic());
+        boolean isFileHashSignatureValid = verifySignature(decryptedFileHashRSA, signedFileHash, aliceKeyPair.getPublic());
         System.out.println("Step 12 - Alice's file hash signature valid? " + isFileHashSignatureValid);
 
         // 13. Bob verifies timestamp signature
-        boolean isTimestampValid = verifySignature(timestampBytes, signedTimestamp, aliceKeyPair.getPublic());
+        boolean isTimestampValid = verifySignature(decryptedTimeStampRSA, signedTimestamp, aliceKeyPair.getPublic());
         System.out.println("Step 13 - Timestamp signature valid? " + isTimestampValid);
 
         // 14. Bob decrypts the file using AES session key + IV
         SecretKeySpec bobsAesKey = new SecretKeySpec(aesSessionKey.getEncoded(), "AES");
         IvParameterSpec bobsIvSpec = new IvParameterSpec(iv);
-        byte[] decryptedFileData = aesDecrypt(encryptedFile, bobsAesKey, bobsIvSpec);
+        byte[] decryptedFileData = aesDecrypt(decryptedFileRSA, bobsAesKey, bobsIvSpec);
         System.out.println("Step 14 - File decrypted by Bob");
 
         // 15. Bob calculates hash of the decrypted file
