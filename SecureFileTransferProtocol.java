@@ -105,8 +105,8 @@ public class SecureFileTransferProtocol {
         System.out.println("Step 13 - Timestamp signature valid? " + isTimestampValid);
 
         // 14. Bob decrypts the file using AES session key + IV
-        SecretKeySpec bobsAesKey = new SecretKeySpec(decryptedKey, "AES");
-        IvParameterSpec bobsIvSpec = new IvParameterSpec(decryptedIv);
+        SecretKeySpec bobsAesKey = new SecretKeySpec(aesSessionKey.getEncoded(), "AES");
+        IvParameterSpec bobsIvSpec = new IvParameterSpec(iv);
         byte[] decryptedFileData = aesDecrypt(encryptedFile, bobsAesKey, bobsIvSpec);
         System.out.println("Step 14 - File decrypted by Bob");
 
