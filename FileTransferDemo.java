@@ -14,13 +14,11 @@ public class FileTransferDemo {
         SecureFileTransferAPI alice = new SecureFileTransferAPI("Alice");
         SecureFileTransferAPI bob = new SecureFileTransferAPI("Bob");
         
-        // Exchange public keys (in real scenario, this would be done through a secure channel)
         alice.addTrustedParticipant("Bob", bob.getPublicKey());
         bob.addTrustedParticipant("Alice", alice.getPublicKey());
         
         System.out.println("✓ Participants created and public keys exchanged");
         
-        // Create a test file to transfer
         String testFileContent = "This is a confidential document from Alice to Bob.\n" +
                 "It contains sensitive information that must be protected.\n" +
                 "The content is encrypted using AES and verified with SHA-256 hash.\n" +
@@ -42,11 +40,9 @@ public class FileTransferDemo {
             System.out.println("✓ Alice: File encrypted and prepared for transfer");
             System.out.println("  Transfer packet size: " + getTotalPacketSize(result.packet) + " bytes");
             
-            // Simulate network transmission (in real scenario, this would go over network)
+            // Simulate network transmission
             System.out.println("📡 Transmitting encrypted file packet...");
             
-            // Bob receives and decrypts the file using shared session information
-            // Get Alice's session details to share with Bob
             SecureFileTransferAPI.SessionContext aliceSession = alice.getSession(sessionId);
             
             SecureFileTransferAPI.ReceivedFile receivedFile = bob.receiveFileWithSession(
@@ -75,19 +71,17 @@ public class FileTransferDemo {
                 }
                 
             } else {
-                System.err.println("❌ File verification failed!");
+                System.err.println("File verification failed!");
             }
             
         } else {
-            System.err.println("❌ File transfer failed: " + result.message);
+            System.err.println("File transfer failed: " + result.message);
         }
         
-        // Clean up
         alice.closeSession(sessionId);
         bob.closeSession(sessionId);
         System.out.println("\n✓ Session closed and resources cleaned up");
         
-        // Clean up test files
         try {
             Files.deleteIfExists(Paths.get(testFileName));
             Files.deleteIfExists(Paths.get("received_" + testFileName));
